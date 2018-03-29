@@ -52,18 +52,70 @@ if dir == '':
     dir = os.curdir
 
 # Initialize context
-ctx = SSL.Context(SSL.DTLSv1_METHOD)
-# ctx = SSL.Context(SSL.DTLS_METHOD)
-# ctx.set_options(SSL.OP_NO_DTLSv1)
-ctx.set_options(SSL.OP_COOKIE_EXCHANGE)
+ctx = SSL.Context(SSL.DTLS_METHOD)
+ctx.set_options(SSL.OP_NO_DTLSv1)
+#ctx.set_options(SSL.OP_COOKIE_EXCHANGE)
 ctx.set_cookie_generate_cb(generate_cookie_cb)
 ctx.set_cookie_verify_cb(verify_cookie_cb)
-ctx.set_verify(
-    SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT, verify_cb
-)  # Demand a certificate
-ctx.use_privatekey_file(os.path.join(dir, 'server.pkey'))
-ctx.use_certificate_file(os.path.join(dir, 'server.cert'))
-ctx.load_verify_locations(os.path.join(dir, 'CA.cert'))
+
+from OpenSSL._util import lib, ffi
+from functools import wraps
+class PSKServerHelper(SSL._CallbackExceptionHelper):
+    """
+    Wrap a callback such that it can be used as a
+    PSK server callback.
+    """
+
+    def __init__(self, callback):
+        super().__init__()
+
+        @wraps(callback)
+        def wrapper(ssl, identity, psk, max_psk_len):
+            try:
+                conn = SSL.Connection._reverse_mapping[ssl]
+
+                if identity == ffi.NULL:
+                    identity = None
+                else:
+                    identity = ffi.string(identity)
+
+                key_from_application = callback(conn, identity)
+
+                key_from_application = bytes(key_from_application)
+                if len(key_from_application) > max_psk_len:
+                    raise ValueError("Key exceeds maximum PSK length")
+
+                psk[0:len(key_from_application)] = key_from_application
+                print("set to", ffi.string(psk[0:len(key_from_application)]))
+
+                return len(key_from_application)
+            except Exception as e:
+                import logging
+                logging.exception(e)
+                self._problems.append(e)
+                return 0  # context not found
+
+        self.callback = ffi.callback(
+            ("unsigned int(*)(SSL *, char *, unsigned char *, int)"),
+            wrapper
+        )
+def cb(ssl, identity):
+    print("Got identity %r on connection %s" % (identity, ssl))
+    print("Returning static key anyhow")
+    return b'N6XzPGY7CP9QEgP0'
+
+ctx.set_cipher_list(b"PSK-AES128-CCM8")
+
+lib.SSL_CTX_use_psk_identity_hint(ctx._context, b'some hint')
+wrapped = PSKServerHelper(cb).callback # reference needs to be kept around!
+lib.SSL_CTX_set_psk_server_callback(ctx._context, wrapped)
+
+# ctx.set_verify(
+#     SSL.VERIFY_PEER | SSL.VERIFY_FAIL_IF_NO_PEER_CERT, verify_cb
+# )  # Demand a certificate
+#ctx.use_privatekey_file(os.path.join(dir, 'server.pkey'))
+#ctx.use_certificate_file(os.path.join(dir, 'server.cert'))
+#ctx.load_verify_locations(os.path.join(dir, 'CA.cert'))
 
 clients = {}
 writers = {}

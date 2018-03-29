@@ -44,7 +44,7 @@ __all__ = [
     'TLSv1_1_METHOD',
     'TLSv1_2_METHOD',
     'DTLSv1_METHOD',
-    # 'DTLS_METHOD',
+    'DTLS_METHOD',
     'OP_NO_SSLv2',
     'OP_NO_SSLv3',
     'OP_NO_TLSv1',
@@ -141,7 +141,7 @@ TLSv1_1_METHOD = 5
 TLSv1_2_METHOD = 6
 DTLSv1_METHOD = 7
 # Requires openssl>=1.0.2
-# DTLS_METHOD = 8
+DTLS_METHOD = 8
 
 OP_NO_SSLv2 = _lib.SSL_OP_NO_SSLv2
 OP_NO_SSLv3 = _lib.SSL_OP_NO_SSLv3
@@ -149,7 +149,7 @@ OP_NO_TLSv1 = _lib.SSL_OP_NO_TLSv1
 OP_NO_TLSv1_1 = _lib.SSL_OP_NO_TLSv1_1
 OP_NO_TLSv1_2 = _lib.SSL_OP_NO_TLSv1_2
 # Requires openssl>=1.0.2
-# OP_NO_DTLSv1 = _lib.SSL_OP_NO_DTLSv1
+OP_NO_DTLSv1 = _lib.SSL_OP_NO_DTLSv1
 # OP_NO_DTLSv1_2 = _lib.SSL_OP_NO_DTLSv1_2
 
 MODE_RELEASE_BUFFERS = _lib.SSL_MODE_RELEASE_BUFFERS
@@ -781,7 +781,7 @@ class Context(object):
         TLSv1_1_METHOD: "TLSv1_1_method",
         TLSv1_2_METHOD: "TLSv1_2_method",
         DTLSv1_METHOD: "DTLSv1_method",
-        # DTLS_METHOD: "DTLS_method",
+        DTLS_METHOD: "DTLS_method",
     }
     _methods = dict(
         (identifier, getattr(_lib, name))
