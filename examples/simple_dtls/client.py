@@ -42,10 +42,10 @@ ctx.load_verify_locations(os.path.join(dir, 'CA.cert'))
 
 # Set up client
 sock = SSL.Connection(ctx, socket.socket(socket.AF_INET, socket.SOCK_DGRAM))
-sock.connect((sys.argv[1], int(sys.argv[2])))
+sock.connect((sys.argv[1].encode('ascii'), int(sys.argv[2])))
 
 
-print sock._socket.getsockname()
+print(sock._socket.getsockname())
 sys.stdout.flush()
 
 # do handshake on connect

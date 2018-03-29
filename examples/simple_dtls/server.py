@@ -35,7 +35,7 @@ def generate_cookie_cb(conn):
         backend=default_backend()
     )
     # TODO: fix this, actually use peer info as a digest
-    h.update(str(conn))
+    h.update(str(conn).encode('utf8'))
     return h.finalize()
 
 
